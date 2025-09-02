@@ -97,7 +97,7 @@ export function TaskRow({ task, onToggle, onDelete }: TaskRowProps) {
               ]}
               numberOfLines={1}
             >
-              {task.title}
+              {task.title || "Untitled Task"}
             </ThemedText>
 
             {task.description ? (
@@ -109,7 +109,7 @@ export function TaskRow({ task, onToggle, onDelete }: TaskRowProps) {
                     opacity: 0.5,
                   },
                 ]}
-                numberOfLines={2}
+                numberOfLines={1}
               >
                 {task.description}
               </ThemedText>
