@@ -1,16 +1,13 @@
-/**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
- */
-
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from "@/constants/Colors";
+import { useColorScheme as useSystemColorScheme } from "react-native";
+import { useTheme } from "@/store/useTheme";
 
 export function useThemeColor(
   props: { light?: string; dark?: string },
   colorName: keyof typeof Colors.light & keyof typeof Colors.dark
 ) {
-  const theme = useColorScheme() ?? 'light';
+  const { theme } = useTheme();
+
   const colorFromProps = props[theme];
 
   if (colorFromProps) {
