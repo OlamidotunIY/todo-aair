@@ -2,10 +2,14 @@
 
 A simple React Native (Expo) Todo app built with Expo Router, Zustand for state management, and AsyncStorage for persistence.
 
+**🎤 NEW: Stage 2 - Voice-to-Task Feature**
+Now includes intelligent voice input that converts natural speech like "Buy groceries and call mom" into multiple tasks automatically!
+
 This README explains how to run the app (including on Expo Go), the implemented functionality, how each feature works, and how the project aligns with the provided project requirements.
 
 ## Checklist (requirements mapping)
 
+### Stage 1 Features
 - [x] Add new tasks (title + optional description)
 - [x] Mark tasks completed/incomplete
 - [x] Delete tasks (moves to Trash)
@@ -14,6 +18,17 @@ This README explains how to run the app (including on Expo Go), the implemented 
 - [x] Persist tasks between launches using AsyncStorage (via zustand persist)
 - [x] Navigation with React Navigation / Expo Router (Task List, Create Task, Trash)
 - [x] Simple, clean UI and basic edge-case handling (empty title validation, no tasks state handled)
+
+### Stage 2 Features (Voice-to-Task)
+- [x] Floating Action Button (FAB) for voice input on task list screen
+- [x] Expo SpeechRecognizer integration with permission handling
+- [x] Visual feedback (pulsing animation, state colors) while recording
+- [x] Hybrid task parsing: OpenAI GPT-4o-mini (primary) + Compromise NLP (fallback)
+- [x] Natural language processing to split multi-task speech into individual tasks
+- [x] Automatic task creation from parsed voice input
+- [x] Offline mode support (works without API key using local NLP)
+- [x] Error handling for permissions, network failures, and transcription issues
+- [x] User feedback via alerts and haptic responses
 
 ## Project structure (important files)
 
@@ -41,6 +56,28 @@ This README explains how to run the app (including on Expo Go), the implemented 
 
 	- Where: `TaskRow` exposes a delete action which calls `moveToTrash(id)` in the store.
 	- How: `moveToTrash` removes the task from `tasks` and adds it to a `trash` array in the zustand store. The Trash screen (`/trash`) allows restore or emptying the trash.
+
+3.5) 🎤 Voice-to-Task (NEW - Stage 2)
+
+	- Where: `app/(task)/all-task.tsx` with `components/VoiceFAB.tsx` and `utils/parseTasks.ts`.
+	- What: A floating action button (blue microphone icon) in the bottom-right corner of the task list screen.
+	- How it works:
+		- Tap the FAB to start voice recording (turns red and pulses)
+		- Speak naturally: "Buy groceries and call mom"
+		- Tap again to stop (or wait for silence)
+		- The app transcribes speech using Expo SpeechRecognizer
+		- Transcript is parsed using hybrid approach:
+			• Primary: OpenAI GPT-4o-mini API (if API key configured)
+			• Fallback: Compromise NLP library (works offline)
+		- Multiple tasks are automatically created and saved
+		- Confirmation alert shows all created tasks
+	- Features:
+		- Works offline (without API key) using local NLP
+		- Removes filler words ("please", "remind me to")
+		- Splits on natural conjunctions ("and", "then", commas)
+		- Handles permissions automatically
+		- Visual states: idle (blue), listening (red), processing (orange)
+		- Haptic feedback on press
 
 4) Show list of all tasks
 
@@ -85,6 +122,30 @@ npm install
 # or
 yarn install
 ```
+
+### 🎤 Voice Feature Setup (Optional but Recommended)
+
+The Voice-to-Task feature works without configuration but provides better results with OpenAI:
+
+1. Edit `app.json` and add your OpenAI API key:
+```json
+{
+  "expo": {
+    ...
+    "extra": {
+      "OPENAI_API_KEY": "sk-your-actual-api-key-here"
+    }
+  }
+}
+```
+
+Get your key from: https://platform.openai.com/api-keys
+
+2. Restart Expo to apply changes
+
+**Note**: The app works perfectly offline without an API key (uses local NLP).
+
+📖 **Full Setup Options**: [ENV_SETUP.md](./ENV_SETUP.md) | **Feature Docs**: [VOICE_FEATURE_SETUP.md](./VOICE_FEATURE_SETUP.md)
 
 Start the Expo dev server
 

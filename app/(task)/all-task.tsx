@@ -6,27 +6,63 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { FilterButtons } from "@/components/ui/FilterButton";
 import SortButton from "@/components/ui/SortButton";
 import { TaskRow } from "@/components/ui/TaskRow";
+import { VoiceFAB } from "@/components/VoiceFAB";
 import { Colors } from "@/constants/Colors";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useTasks } from "@/store/useTask";
 import { useTheme } from "@/store/useTheme";
-import { FontAwesome6, Feather } from "@expo/vector-icons";
+import { parseVoiceTasks } from "@/utils/parseTasks";
+import { Feather, FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
+  Alert,
+  Dimensions,
   FlatList,
+  Pressable,
   SafeAreaView,
   StyleSheet,
   View,
-  Dimensions,
-  Pressable,
 } from "react-native";
 
 const width = Dimensions.get("screen").width;
 
 export default function TaskListScreen() {
   const { theme } = useTheme();
-  const { getVisibleTasks, toggleTask, setSearch, moveToTrash } = useTasks();
+  const { getVisibleTasks, toggleTask, setSearch, moveToTrash, addTask } = useTasks();
 
   const tasks = getVisibleTasks();
+
+  // Handle voice transcript
+  const handleVoiceResult = async (transcript: string) => {
+    console.log("🔄 Processing transcript:", transcript);
+
+    // Parse transcript into multiple tasks
+    const taskTitles = await parseVoiceTasks(transcript);
+
+    if (taskTitles.length === 0) {
+      throw new Error("Could not parse any tasks from speech");
+    }
+
+    // Add each task to the store
+    taskTitles.forEach((title) => {
+      addTask(title);
+    });
+
+    // Show confirmation
+    const taskList = taskTitles.map((t, i) => `${i + 1}. ${t}`).join("\n");
+    Alert.alert(
+      "✅ Tasks Added",
+      `Successfully added ${taskTitles.length} task(s):\n\n${taskList}`,
+      [{ text: "OK" }]
+    );
+
+    console.log("✅ Added tasks:", taskTitles);
+  };
+
+  // Use speech recognition hook
+  const { state: voiceState, toggle: toggleVoiceRecognition } = useSpeechRecognition({
+    onResult: handleVoiceResult,
+  });
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -87,6 +123,11 @@ export default function TaskListScreen() {
             style={styles.fullWidthBtn}
           />
         </ThemedView>
+
+        {/* 🎤 Voice Input FAB */}
+        <View style={styles.voiceFAB}>
+          <VoiceFAB onPress={toggleVoiceRecognition} state={voiceState} />
+        </View>
 
         {/* 📋 Task List */}
         {tasks.length === 0 ? (
@@ -180,6 +221,14 @@ const styles = StyleSheet.create({
   },
   fullWidthBtn: {
     width: "100%",
+  },
+
+  // 🎤 Voice FAB
+  voiceFAB: {
+    position: "absolute",
+    bottom: 100,
+    right: 20,
+    zIndex: 20,
   },
 
   // 📝 Empty State
