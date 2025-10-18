@@ -20,15 +20,25 @@ const FILLER_WORDS = [
   'please',
   'can you',
   'could you',
+  'would you',
   'remind me to',
   'remind me',
+  'i need to go',
   'i need to',
   'i have to',
   'i want to',
   'i should',
+  'i must',
+  'i\'d like to',
   'don\'t forget to',
   'make sure to',
   'be sure to',
+  'i also want to',
+  'and i need to',
+  'and i want to',
+  'and i have to',
+  'so i need to',
+  'so i want to',
 ];
 
 /**
@@ -43,11 +53,22 @@ function cleanTask(task: string): string {
     cleaned = cleaned.replace(regex, '');
   });
 
+  // Remove common speech fillers
+  cleaned = cleaned.replace(/\b(um|uh|er|ah)\b/gi, '');
+
   // Remove leading articles
   cleaned = cleaned.replace(/^(a|an|the)\s+/i, '');
 
+  // Remove leading "go" if it's redundant (e.g., "go cook" -> "cook")
+  cleaned = cleaned.replace(/^go\s+(?=\w+)/i, '');
+
+  // Clean up multiple spaces
+  cleaned = cleaned.replace(/\s{2,}/g, ' ').trim();
+
   // Capitalize first letter
-  cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  if (cleaned.length > 0) {
+    cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
 
   // Remove trailing punctuation except periods that are part of abbreviations
   cleaned = cleaned.replace(/[,;!?]+$/, '');
@@ -136,25 +157,57 @@ Output:`;
 }
 
 /**
- * Parse tasks using Compromise NLP (fallback)
- * Splits on conjunctions and commas
+ * Parse tasks using advanced NLP (fallback)
+ * Handles complex sentences with multiple tasks
  */
 function parseWithCompromise(transcript: string): string[] {
-  console.log('🔄 Using Compromise NLP fallback parser');
+  console.log('🔄 Using Advanced NLP fallback parser');
 
   try {
-    // Split on common conjunctions and punctuation
-    const separators = /\s+(?:and|then|also|plus|,|;)\s+/i;
-    let segments = transcript.split(separators);
+    // Normalize the transcript
+    let text = transcript.trim();
 
-    // If no separators found, treat whole transcript as one task
-    if (segments.length === 1) {
-      segments = [transcript];
+    // Replace "I need to" patterns with markers
+    text = text.replace(/\b(i need to|i have to|i want to|i should|i must|i'd like to)\b/gi, '|||TASK|||');
+
+    // Replace other task indicators
+    text = text.replace(/\b(and i|also i|then i)\b/gi, '|||TASK||| I');
+
+    // Replace standalone conjunctions that indicate new tasks
+    text = text.replace(/\s+(and also|and then|and|also|then|plus)\s+/gi, ' |||TASK||| ');
+
+    // Split by the marker
+    let segments = text.split('|||TASK|||')
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+
+    // If no segments found, try simpler splitting
+    if (segments.length === 0 || (segments.length === 1 && !text.includes('|||TASK|||'))) {
+      // Try splitting on commas and common conjunctions
+      segments = text.split(/\s*(?:,\s*and\s*|,\s*|\sand\s+(?=i\s)|and\s+i\s|also\s+i\s|then\s+i\s)\s*/i)
+        .filter(s => s.trim().length > 0);
     }
 
-    // Clean each segment
+    // If still only one segment and it's long, try to extract action verbs
+    if (segments.length === 1 && text.length > 50) {
+      // Look for common action verb patterns
+      const actionPattern = /\b(go|cook|wash|watch|pick up|get|buy|call|send|complete|finish|review|recharge|clean|write|read|study|exercise|email|message|meet|schedule|plan|organize)\s+[^.!?]*(?=[.!?]|\s+and\s+|\s+i\s+need|\s+i\s+want|\s+also|$)/gi;
+      const matches = text.match(actionPattern);
+
+      if (matches && matches.length > 1) {
+        segments = matches.map(m => m.trim());
+      }
+    }
+
+    // Clean and process each segment
     const tasks = segments
-      .map(cleanTask)
+      .map(segment => {
+        // Remove leading "go" if followed by another verb
+        segment = segment.replace(/^go\s+(cook|wash|watch|pick|get|buy|call|send|complete|finish|review|clean|write|read)/i, '$1');
+
+        // Clean the task
+        return cleanTask(segment);
+      })
       .filter(task => {
         // Filter out very short or empty tasks
         if (task.length < 3) return false;
@@ -163,21 +216,32 @@ function parseWithCompromise(transcript: string): string[] {
         const lowerTask = task.toLowerCase();
         if (
           lowerTask === 'and' ||
+          lowerTask === 'i' ||
           lowerTask === 'then' ||
           lowerTask === 'also' ||
-          lowerTask === 'plus'
+          lowerTask === 'plus' ||
+          lowerTask === 'go'
         ) {
           return false;
         }
 
         return true;
+      })
+      .map(task => {
+        // Further clean up remaining filler patterns
+        task = task.replace(/^(go\s+)/, '');
+        task = task.replace(/\s+um\s+/gi, ' ');
+        task = task.replace(/\s{2,}/g, ' ');
+
+        // Ensure first letter is capitalized
+        return task.charAt(0).toUpperCase() + task.slice(1);
       });
 
-    console.log('✅ Compromise parsed tasks:', tasks);
+    console.log('✅ Advanced NLP parsed tasks:', tasks);
     return tasks;
 
   } catch (error) {
-    console.error('❌ Compromise parsing error:', error);
+    console.error('❌ Advanced NLP parsing error:', error);
     // Last resort: return original transcript as single task
     return [cleanTask(transcript)];
   }

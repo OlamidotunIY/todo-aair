@@ -32,6 +32,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="todoaair"/>
+        <data android:scheme="exp+todo-aair"/>
       </intent-filter>
     </activity>
   </application>

@@ -6,9 +6,9 @@ import {
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
-import "react-native-get-random-values";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import "react-native-get-random-values";
+import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useSyncSystemTheme } from "@/utils/useSyncSystemTheme";
@@ -33,15 +33,7 @@ export default function RootLayout() {
     >
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
-          <Stack.Screen
-            name="(task)/all-task"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="(task)/create-task"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen name="(task)/trash" options={{ headerShown: false }} />
+          <Stack.Screen name="(task)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />
